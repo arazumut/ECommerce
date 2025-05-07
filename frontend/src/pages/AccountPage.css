@@ -1,0 +1,93 @@
+.account-page {
+  min-height: 70vh;
+}
+
+.account-page h1 {
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+.account-page h2 {
+  color: #444;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.card {
+  border: none;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+}
+
+.order-card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.order-card:hover {
+  transform: translateY(-3px);
+}
+
+.nav-pills .nav-link {
+  color: #495057;
+  font-weight: 500;
+  border-radius: 0.25rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.nav-pills .nav-link.active {
+  background-color: #4a89dc;
+  color: white;
+}
+
+.nav-pills .nav-link:hover:not(.active) {
+  background-color: #f8f9fa;
+}
+
+.tab-content {
+  padding: 1.5rem 0;
+}
+
+.btn-primary {
+  background-color: #4a89dc;
+  border-color: #4a89dc;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: #3a70b5;
+  border-color: #3a70b5;
+}
+
+.btn-outline-primary {
+  color: #4a89dc;
+  border-color: #4a89dc;
+}
+
+.btn-outline-primary:hover, .btn-outline-primary:focus {
+  background-color: #4a89dc;
+  border-color: #4a89dc;
+}
+
+.alert-success {
+  color: #155724;
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+}
+
+.form-label {
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .account-page h1 {
+    font-size: 1.75rem;
+  }
+  
+  .account-page h2 {
+    font-size: 1.25rem;
+  }
+  
+  .nav-pills .nav-link {
+    padding: 0.5rem 0.75rem;
+  }
+} 

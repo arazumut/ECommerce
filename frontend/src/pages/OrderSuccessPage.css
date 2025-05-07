@@ -1,0 +1,78 @@
+.order-success-page {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+}
+
+.success-card {
+  padding: 2rem;
+  border: none;
+  border-radius: 10px;
+}
+
+.success-icon {
+  font-size: 5rem;
+  color: #28a745;
+  margin-bottom: 1.5rem;
+}
+
+.order-success-page h1 {
+  color: #333;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+}
+
+.order-details {
+  background-color: #f8f9fa;
+  border: none;
+  border-radius: 0.5rem;
+}
+
+.order-number {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #4a89dc;
+}
+
+.order-total {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #28a745;
+}
+
+.btn-primary {
+  background-color: #4a89dc;
+  border-color: #4a89dc;
+  padding: 0.75rem 1.5rem;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: #3a70b5;
+  border-color: #3a70b5;
+}
+
+.btn-outline-primary {
+  color: #4a89dc;
+  border-color: #4a89dc;
+  padding: 0.75rem 1.5rem;
+}
+
+.btn-outline-primary:hover, .btn-outline-primary:focus {
+  background-color: #4a89dc;
+  border-color: #4a89dc;
+}
+
+@media (max-width: 768px) {
+  .success-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+  
+  .order-success-page h1 {
+    font-size: 1.5rem;
+  }
+  
+  .success-card {
+    padding: 1.5rem;
+  }
+} 

@@ -1,0 +1,92 @@
+.login-page {
+  min-height: calc(100vh - 300px);
+  display: flex;
+  align-items: center;
+}
+
+.login-card {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.login-title {
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 10px;
+}
+
+/* Form with Icon */
+.form-icon-wrapper {
+  position: relative;
+}
+
+.form-icon-left {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+}
+
+.form-icon-wrapper .form-control {
+  padding-left: 40px;
+  height: 48px;
+  border-radius: 8px;
+  border-color: #ced4da;
+  transition: all 0.3s ease;
+}
+
+.form-icon-wrapper .form-control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.25rem rgba(63, 81, 181, 0.25);
+}
+
+/* Forgot Password Link */
+.forgot-password {
+  color: var(--text-light);
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.forgot-password:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+/* Social Login */
+.social-login {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.social-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.3s ease;
+}
+
+.social-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Register Link */
+.register-link {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.register-link:hover {
+  text-decoration: underline;
+} 
