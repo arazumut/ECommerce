@@ -18,6 +18,8 @@ function CheckoutPage() {
     postcode: '',
     phone: '',
     notes: '',
+    country: '',
+    region: '',
   });
   const [billingAddress, setBillingAddress] = useState({
     firstName: '',
