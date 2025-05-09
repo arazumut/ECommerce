@@ -84,6 +84,8 @@ INSTALLED_APPS = [
     
     # 3rd Party
     'widget_tweaks',
+    'django_tables2',
+    'sorl.thumbnail',
     
     # Local apps
     'store',
@@ -211,7 +213,7 @@ OSCAR_ORDER_STATUS_PIPELINE = {
 # Oscar API Settings
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',

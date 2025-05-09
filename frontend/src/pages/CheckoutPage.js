@@ -45,11 +45,46 @@ function CheckoutPage() {
   useEffect(() => {
     const fetchBasket = async () => {
       try {
-        const response = await axios.get('/api/basket/');
-        setBasketData(response.data);
+        setLoading(true);
+        // Önce sepet bilgisini al
+        const basketResponse = await axios.get('/api/basket/');
+        console.log('Sepet yanıtı:', basketResponse.data);
+        
+        // Sepet boş değilse, sepet ürünlerini ayrı bir istekle al
+        if (basketResponse.data) {
+          // Şimdi lines URL'sini kullanarak sepet ürünlerini al
+          try {
+            const linesUrl = basketResponse.data.lines; // Bir URL olarak geliyor
+            if (typeof linesUrl === 'string' && linesUrl) {
+              const linesResponse = await axios.get(linesUrl);
+              console.log('Sepet ürünleri yanıtı:', linesResponse.data);
+              
+              // basketData içine sepet bilgilerini ve ürünleri birleştirerek koy
+              setBasketData({
+                ...basketResponse.data,
+                lines: Array.isArray(linesResponse.data) ? linesResponse.data : []
+              });
+            } else {
+              // lines bir URL değilse, boş dizi olarak ayarla
+              setBasketData({
+                ...basketResponse.data,
+                lines: []
+              });
+            }
+          } catch (error) {
+            console.error('Sepet ürünleri yüklenirken hata oluştu:', error);
+            setBasketData({
+              ...basketResponse.data,
+              lines: []
+            });
+          }
+        } else {
+          setBasketData({ lines: [] });
+        }
       } catch (error) {
         console.error('Sepet bilgileri yüklenirken hata oluştu:', error);
         setError('Sepet bilgileri yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
+        setBasketData({ lines: [] });
       } finally {
         setLoading(false);
       }
@@ -179,13 +214,13 @@ function CheckoutPage() {
     return <div className="text-center p-5">Yükleniyor...</div>;
   }
 
-  if (basketData && basketData.lines.length === 0) {
+  if (!basketData || !basketData.lines || !Array.isArray(basketData.lines) || basketData.lines.length === 0) {
     return (
       <Container className="checkout-page py-4">
         <div className="text-center">
           <h1>Sepetiniz Boş</h1>
           <p>Ödeme yapabilmek için sepetinize ürün eklemelisiniz.</p>
-          <Button variant="primary" href="/catalogue/">Alışverişe Devam Et</Button>
+          <Button variant="primary" href="/products">Alışverişe Devam Et</Button>
         </div>
       </Container>
     );
@@ -591,7 +626,7 @@ function CheckoutPage() {
               <h2>Sipariş Özeti</h2>
             </Card.Header>
             <ListGroup variant="flush">
-              {basketData && basketData.lines.map((line) => (
+              {basketData && basketData.lines && Array.isArray(basketData.lines) && basketData.lines.map((line) => (
                 <ListGroup.Item key={line.id} className="d-flex justify-content-between">
                   <div>
                     <h6>{line.product.title}</h6>

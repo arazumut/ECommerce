@@ -12,6 +12,7 @@ const ProductDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [selectedImage, setSelectedImage] = useState(0);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   useEffect(() => {
     const fetchProductDetail = async () => {
@@ -19,15 +20,41 @@ const ProductDetailPage = () => {
         setLoading(true);
         // API'den ürün detayını getirme
         const response = await fetch(`/api/products/${productSlug}/`);
+        
+        // Başarılı yanıt kontrolü
+        if (!response.ok) {
+          console.error(`API yanıtı başarısız: ${response.status} ${response.statusText}`);
+          throw new Error(`Ürün verileri alınamadı: ${response.status} ${response.statusText}`);
+        }
+        
         const data = await response.json();
+        console.log('API Ürün verisi:', data); // Hata ayıklama için
         setProduct(data);
-        // Bu kısımda ilgili ürünlerin API'si olsaydı onları da alırdık.
-        // Şimdilik benzer kategorideki ürünleri getiren bir istek simüle ediyoruz
-        const relatedResponse = await fetch(`/api/products/?category=${data.categories[0].id}&limit=4`);
-        const relatedData = await relatedResponse.json();
-        setRelatedProducts(relatedData.results || []);
+        
+        // Bu kısımda ilgili ürünleri getirme
+        try {
+          let categoryId = null;
+          if (data && data.categories && data.categories.length > 0 && data.categories[0]?.id) {
+            categoryId = data.categories[0].id;
+          }
+          
+          const relatedResponse = await fetch(`/api/products/?${categoryId ? `category=${categoryId}` : ''}&limit=4`);
+          
+          if (!relatedResponse.ok) {
+            console.error(`İlgili ürünler API yanıtı başarısız: ${relatedResponse.status}`);
+            throw new Error(`İlgili ürünler alınamadı: ${relatedResponse.status}`);
+          }
+          
+          const relatedData = await relatedResponse.json();
+          console.log('İlgili ürünler verisi:', relatedData); // Hata ayıklama için
+          setRelatedProducts(relatedData.results || []);
+        } catch (error) {
+          console.error('İlgili ürünler yüklenirken hata oluştu:', error);
+          setRelatedProducts([]);
+        }
       } catch (error) {
         console.error('Ürün detayı yüklenirken hata oluştu:', error);
+        // Hata durumunda mockProduct kullanılacak
       } finally {
         setLoading(false);
       }
@@ -58,14 +85,60 @@ const ProductDetailPage = () => {
   };
 
   const addToCart = () => {
-    // Sepete ekleme işlemi burada yapılacak
-    console.log(`${quantity} adet ${product?.title} sepete eklendi.`);
-    // API çağrısı burada olacak
-    // fetch('/api/basket/add/', {
-    //   method: 'POST',
-    //   body: JSON.stringify({ product_id: product.id, quantity }),
-    //   headers: { 'Content-Type': 'application/json' }
-    // });
+    // Yükleniyor durumuna geç
+    setIsAddingToCart(true);
+    
+    // Ürün ID'si kontrolü
+    let productId = product?.id;
+    if (!productId && product?.url) {
+      // Bazen URL'den ID çıkarılabilir
+      const urlParts = product.url.split('/');
+      productId = urlParts[urlParts.length - 2]; // URL sonundaki slash'tan önceki değer
+    }
+    
+    if (!productId) {
+      console.error('Ürün ID bilgisi bulunamadı:', product);
+      alert('Ürün eklenemiyor: Ürün bilgisi eksik.');
+      setIsAddingToCart(false);
+      return;
+    }
+    
+    // Sepete ekleme işlemi
+    fetch('/api/basket/add-product/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: `/api/products/${productId}/`,
+        quantity: quantity
+      })
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Sepete ekleme işlemi başarısız oldu: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Ürün sepete eklendi:', data);
+        
+        // Başarı mesajı göster
+        const productTitle = product?.title || displayProduct?.title || 'Ürün';
+        alert(`${quantity} adet ${productTitle} sepete eklendi!`);
+        
+        // Sepet bilgisini güncelle
+        const event = new CustomEvent('basketUpdated');
+        window.dispatchEvent(event);
+      })
+      .catch(error => {
+        console.error('Sepete eklerken hata oluştu:', error);
+        alert('Sepete eklerken bir hata oluştu. Lütfen tekrar deneyin.');
+      })
+      .finally(() => {
+        // İşlem tamamlandığında normal duruma dön
+        setIsAddingToCart(false);
+      });
   };
 
   const addToWishlist = () => {
@@ -170,7 +243,7 @@ const ProductDetailPage = () => {
         <Breadcrumb className="mb-4">
           <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/' }}>Ana Sayfa</Breadcrumb.Item>
           <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/products' }}>Ürünler</Breadcrumb.Item>
-          {displayProduct.categories[0] && (
+          {displayProduct.categories && displayProduct.categories[0] && (
             <Breadcrumb.Item 
               linkAs={Link} 
               linkProps={{ to: `/products/${displayProduct.categories[0].slug}` }}
@@ -188,23 +261,33 @@ const ProductDetailPage = () => {
             <div className="product-images">
               <div className="main-image-container">
                 <Image 
-                  src={displayProduct.images[selectedImage]} 
+                  src={displayProduct.images && displayProduct.images.length > 0 ? displayProduct.images[selectedImage] : 'https://via.placeholder.com/600x600'} 
                   alt={displayProduct.title} 
                   className="main-image img-fluid" 
                 />
               </div>
               <div className="thumbnail-images mt-3">
                 <Row>
-                  {displayProduct.images.map((image, index) => (
-                    <Col xs={3} key={index}>
+                  {displayProduct.images && displayProduct.images.length > 0 ? (
+                    displayProduct.images.map((image, index) => (
+                      <Col xs={3} key={index}>
+                        <Image 
+                          src={image} 
+                          alt={`${displayProduct.title} - Görsel ${index + 1}`} 
+                          className={`thumbnail-image ${selectedImage === index ? 'active' : ''}`}
+                          onClick={() => setSelectedImage(index)}
+                        />
+                      </Col>
+                    ))
+                  ) : (
+                    <Col xs={3}>
                       <Image 
-                        src={image} 
-                        alt={`${displayProduct.title} - Görsel ${index + 1}`} 
-                        className={`thumbnail-image ${selectedImage === index ? 'active' : ''}`}
-                        onClick={() => setSelectedImage(index)}
+                        src="https://via.placeholder.com/600x600" 
+                        alt="Ürün görseli bulunamadı" 
+                        className="thumbnail-image active"
                       />
                     </Col>
-                  ))}
+                  )}
                 </Row>
               </div>
             </div>
@@ -228,9 +311,9 @@ const ProductDetailPage = () => {
                 <div className="product-rating d-flex align-items-center">
                   {[...Array(5)].map((_, i) => (
                     <span key={i}>
-                      {i < Math.floor(displayProduct.rating) ? (
+                      {i < Math.floor(displayProduct.rating || 0) ? (
                         <FaStar className="star-filled" />
-                      ) : i < Math.ceil(displayProduct.rating) && displayProduct.rating % 1 !== 0 ? (
+                      ) : i < Math.ceil(displayProduct.rating || 0) && (displayProduct.rating || 0) % 1 !== 0 ? (
                         <FaStar className="star-half" />
                       ) : (
                         <FaRegStar className="star-empty" />
@@ -238,7 +321,7 @@ const ProductDetailPage = () => {
                     </span>
                   ))}
                   <span className="rating-text ms-2">
-                    {displayProduct.rating} ({displayProduct.rating_count} değerlendirme)
+                    {displayProduct.rating || 0} ({displayProduct.rating_count || 0} değerlendirme)
                   </span>
                 </div>
               </div>
@@ -322,9 +405,19 @@ const ProductDetailPage = () => {
                     size="lg"
                     className="add-to-cart-btn me-2"
                     onClick={addToCart}
+                    disabled={isAddingToCart}
                   >
-                    <FaShoppingCart className="me-2" />
-                    Sepete Ekle
+                    {isAddingToCart ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Sepete Ekleniyor...
+                      </>
+                    ) : (
+                      <>
+                        <FaShoppingCart className="me-2" />
+                        Sepete Ekle
+                      </>
+                    )}
                   </Button>
                   <Button 
                     variant="outline-secondary" 
@@ -400,32 +493,40 @@ const ProductDetailPage = () => {
                 <h3 className="mb-3">Ürün Açıklaması</h3>
                 <p>{displayProduct.description}</p>
                 
-                <h4 className="mb-3 mt-4">Özellikler</h4>
-                <ul className="feature-list">
-                  {displayProduct.features.map((feature, index) => (
-                    <li key={index}>{feature}</li>
-                  ))}
-                </ul>
+                {displayProduct.features && displayProduct.features.length > 0 && (
+                  <>
+                    <h4 className="mb-3 mt-4">Özellikler</h4>
+                    <ul className="feature-list">
+                      {displayProduct.features.map((feature, index) => (
+                        <li key={index}>{feature}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
               </div>
             </Tab>
             
             <Tab eventKey="specifications" title="Özellikler">
               <div className="tab-content-inner">
                 <h3 className="mb-3">Teknik Özellikler</h3>
-                <table className="table specifications-table">
-                  <tbody>
-                    {displayProduct.specifications.map((spec, index) => (
-                      <tr key={index}>
-                        <td className="spec-name">{spec.name}</td>
-                        <td className="spec-value">{spec.value}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {displayProduct.specifications && displayProduct.specifications.length > 0 ? (
+                  <table className="table specifications-table">
+                    <tbody>
+                      {displayProduct.specifications.map((spec, index) => (
+                        <tr key={index}>
+                          <td className="spec-name">{spec.name}</td>
+                          <td className="spec-value">{spec.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p>Teknik özellikler bulunamadı.</p>
+                )}
               </div>
             </Tab>
             
-            <Tab eventKey="reviews" title={`Değerlendirmeler (${displayProduct.reviews.length})`}>
+            <Tab eventKey="reviews" title={`Değerlendirmeler (${displayProduct.reviews?.length || 0})`}>
               <div className="tab-content-inner">
                 <h3 className="mb-3">Müşteri Değerlendirmeleri</h3>
                 
@@ -433,13 +534,13 @@ const ProductDetailPage = () => {
                   <Row className="align-items-center">
                     <Col md={4} className="text-center mb-3 mb-md-0">
                       <div className="overall-rating">
-                        <div className="rating-number">{displayProduct.rating}</div>
+                        <div className="rating-number">{displayProduct.rating || 0}</div>
                         <div className="rating-stars">
                           {[...Array(5)].map((_, i) => (
                             <span key={i}>
-                              {i < Math.floor(displayProduct.rating) ? (
+                              {i < Math.floor(displayProduct.rating || 0) ? (
                                 <FaStar className="star-filled" />
-                              ) : i < Math.ceil(displayProduct.rating) && displayProduct.rating % 1 !== 0 ? (
+                              ) : i < Math.ceil(displayProduct.rating || 0) && (displayProduct.rating || 0) % 1 !== 0 ? (
                                 <FaStar className="star-half" />
                               ) : (
                                 <FaRegStar className="star-empty" />
@@ -448,64 +549,72 @@ const ProductDetailPage = () => {
                           ))}
                         </div>
                         <div className="rating-count">
-                          Toplam {displayProduct.rating_count} değerlendirme
+                          Toplam {displayProduct.rating_count || 0} değerlendirme
                         </div>
                       </div>
                     </Col>
                     <Col md={8}>
                       <div className="rating-bars">
-                        {[5, 4, 3, 2, 1].map(star => {
-                          const count = displayProduct.reviews.filter(review => Math.round(review.rating) === star).length;
-                          const percentage = (count / displayProduct.reviews.length) * 100;
-                          
-                          return (
-                            <div className="rating-bar-item d-flex align-items-center mb-2" key={star}>
-                              <div className="stars me-2">
-                                {star} <FaStar className="star-filled" />
+                        {displayProduct.reviews && displayProduct.reviews.length > 0 ? (
+                          [5, 4, 3, 2, 1].map(star => {
+                            const count = displayProduct.reviews.filter(review => Math.round(review.rating) === star).length;
+                            const percentage = (count / displayProduct.reviews.length) * 100;
+                            
+                            return (
+                              <div className="rating-bar-item d-flex align-items-center mb-2" key={star}>
+                                <div className="stars me-2">
+                                  {star} <FaStar className="star-filled" />
+                                </div>
+                                <div className="progress flex-grow-1">
+                                  <div 
+                                    className="progress-bar" 
+                                    role="progressbar" 
+                                    style={{ width: `${percentage}%` }} 
+                                    aria-valuenow={percentage} 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="100"
+                                  ></div>
+                                </div>
+                                <div className="count ms-2">
+                                  {count}
+                                </div>
                               </div>
-                              <div className="progress flex-grow-1">
-                                <div 
-                                  className="progress-bar" 
-                                  role="progressbar" 
-                                  style={{ width: `${percentage}%` }} 
-                                  aria-valuenow={percentage} 
-                                  aria-valuemin="0" 
-                                  aria-valuemax="100"
-                                ></div>
-                              </div>
-                              <div className="count ms-2">
-                                {count}
-                              </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })
+                        ) : (
+                          <p>Henüz değerlendirme yok.</p>
+                        )}
                       </div>
                     </Col>
                   </Row>
                 </div>
                 
                 <div className="reviews-list">
-                  {displayProduct.reviews.map(review => (
-                    <div className="review-item mb-4 p-3" key={review.id}>
-                      <div className="review-header d-flex justify-content-between mb-2">
-                        <div className="reviewer-info">
-                          <h5 className="reviewer-name mb-0">{review.user}</h5>
-                          <span className="review-date text-muted">{review.date}</span>
+                  {displayProduct.reviews && displayProduct.reviews.length > 0 ? (
+                    displayProduct.reviews.map(review => (
+                      <div className="review-item mb-4 p-3" key={review.id}>
+                        <div className="review-header d-flex justify-content-between mb-2">
+                          <div className="reviewer-info">
+                            <h5 className="reviewer-name mb-0">{review.user}</h5>
+                            <span className="review-date text-muted">{review.date}</span>
+                          </div>
+                          <div className="review-rating">
+                            {[...Array(5)].map((_, i) => (
+                              <FaStar 
+                                key={i} 
+                                className={i < review.rating ? "star-filled" : "star-empty"} 
+                              />
+                            ))}
+                          </div>
                         </div>
-                        <div className="review-rating">
-                          {[...Array(5)].map((_, i) => (
-                            <FaStar 
-                              key={i} 
-                              className={i < review.rating ? "star-filled" : "star-empty"} 
-                            />
-                          ))}
+                        <div className="review-content">
+                          <p>{review.comment}</p>
                         </div>
                       </div>
-                      <div className="review-content">
-                        <p>{review.comment}</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p>Henüz yorum yapılmamış. İlk yorumu siz yapın!</p>
+                  )}
                 </div>
                 
                 <div className="write-review mt-4">
@@ -544,59 +653,36 @@ const ProductDetailPage = () => {
         <div className="related-products mt-5">
           <h3 className="section-title mb-4">Benzer Ürünler</h3>
           <Row>
-            {relatedProducts.length === 0 ? (
-              <Col>
-                <p className="text-muted">Henüz benzer ürün bulunmuyor.</p>
-              </Col>
-            ) : (
+            {relatedProducts && relatedProducts.length > 0 ? (
               relatedProducts.map(product => (
-                <Col lg={3} md={6} className="mb-4" key={product.id}>
+                <Col key={product.id} md={3} sm={6} className="mb-4">
                   <Card className="product-card h-100">
-                    <div className="product-image">
-                      <Link to={`/product/${product.slug}`}>
-                        <Card.Img 
-                          variant="top" 
-                          src={product.image || "https://via.placeholder.com/300"} 
-                          alt={product.title} 
-                        />
-                      </Link>
-                      {product.is_on_sale && (
-                        <span className="product-badge">İndirim</span>
-                      )}
-                    </div>
-                    <Card.Body>
-                      <Card.Title>
-                        <Link to={`/product/${product.slug}`}>
-                          {product.title}
-                        </Link>
+                    <Link to={`/product/${product.slug}`}>
+                      <Card.Img variant="top" src={product.image || 'https://via.placeholder.com/300'} />
+                    </Link>
+                    <Card.Body className="d-flex flex-column">
+                      <Card.Title className="product-title">
+                        <Link to={`/product/${product.slug}`}>{product.title}</Link>
                       </Card.Title>
-                      <div className="product-rating">
+                      <div className="product-rating mb-2">
                         {[...Array(5)].map((_, i) => (
-                          <FaStar 
-                            key={i} 
-                            className={i < Math.round(product.rating || 0) ? "star-filled" : "star-empty"} 
-                          />
+                          <span key={i}>
+                            {i < Math.floor(product.rating || 0) ? <FaStar className="star-filled" /> : <FaRegStar className="star-empty" />}
+                          </span>
                         ))}
-                        <span className="rating-count">({product.rating_count || 0})</span>
                       </div>
-                      <div className="product-price">
-                        {product.price_old && (
-                          <span className="price-old">{product.price_old} TL</span>
-                        )}
-                        <span className="price-current">{product.price} TL</span>
+                      <div className="product-price mt-auto">
+                        <span className="current-price">{product.price} TL</span>
+                        {product.price_old && <span className="old-price">{product.price_old} TL</span>}
                       </div>
                     </Card.Body>
-                    <Card.Footer className="bg-transparent border-top-0">
-                      <Button 
-                        variant="primary" 
-                        className="w-100"
-                      >
-                        Sepete Ekle
-                      </Button>
-                    </Card.Footer>
                   </Card>
                 </Col>
               ))
+            ) : (
+              <Col>
+                <p className="text-center">İlgili ürün bulunamadı.</p>
+              </Col>
             )}
           </Row>
         </div>

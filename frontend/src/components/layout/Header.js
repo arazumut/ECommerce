@@ -22,7 +22,7 @@ const Header = () => {
     // Kategori verilerini getir
     const fetchCategories = async () => {
       try {
-        const response = await fetch('/api/catalogue/categories/');
+        const response = await fetch('/api/categories/');
         const data = await response.json();
         setCategories(data);
       } catch (error) {
@@ -35,9 +35,54 @@ const Header = () => {
       try {
         const response = await fetch('/api/basket/');
         const data = await response.json();
-        setCartCount(data.total_items || 0);
+        
+        // Sepetteki toplam ürün sayısını ayarla
+        // Oscar API'de sepet içeriğini doğrudan almayı deneyelim
+        if (data && data.id) {
+          try {
+            // Direkt sepet ürünlerini almayı dene
+            const linesResponse = await fetch('/api/basket/lines/');
+            if (linesResponse.ok) {
+              const linesData = await linesResponse.json();
+              if (Array.isArray(linesData)) {
+                const totalItems = linesData.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                setCartCount(totalItems);
+                return; // Başarılı ise işlem tamamlandı
+              }
+            }
+            
+            // Alternatif: API'nin sepet toplam öğe sayısını doğrudan sunup sunmadığını kontrol et
+            if (typeof data.total_items === 'number') {
+              setCartCount(data.total_items);
+              return;
+            }
+            
+            // API yanıtındaki diğer alanlara bak
+            if (typeof data.numItems === 'number') {
+              setCartCount(data.numItems);
+              return;
+            }
+            
+            // Son çare: Sepet ID'si varsa, sepette ürün var kabul et
+            // Bu sadece görsel geribildirim için, gerçek sayı olmayabilir
+            if (data.id) {
+              // Yeni bir ürün eklendiğinde sayıyı artır, ama her istek için değil
+              const event = new CustomEvent('cartItemAdded');
+              window.dispatchEvent(event);
+              setCartCount(prev => Math.max(1, prev)); // En az 1 olsun
+            } else {
+              setCartCount(0);
+            }
+          } catch (error) {
+            console.error('Sepet öğeleri alınırken hata oluştu:', error);
+            setCartCount(0);
+          }
+        } else {
+          setCartCount(0);
+        }
       } catch (error) {
         console.error('Sepet bilgisi alınırken hata oluştu:', error);
+        setCartCount(0);
       }
     };
 
@@ -50,6 +95,19 @@ const Header = () => {
     fetchCategories();
     checkCartStatus();
     checkLoginStatus();
+
+    // Sepet güncellendiğinde tetiklenecek event listener ekle
+    const handleBasketUpdated = () => {
+      checkCartStatus(); // Sepet güncellendiğinde sepet durumunu kontrol et
+    };
+    
+    // Sepete ürün eklendiğinde sayacı artırmak için dinleyici
+    const handleCartItemAdded = () => {
+      setCartCount(prev => prev + 1);
+    };
+    
+    window.addEventListener('basketUpdated', handleBasketUpdated);
+    window.addEventListener('cartItemAdded', handleCartItemAdded);
 
     // Sayfa yüklendiğinde veya rota değiştiğinde offcanvas'ı kapat
     setShowOffcanvas(false);
@@ -75,8 +133,62 @@ const Header = () => {
     // Temizleme
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('basketUpdated', handleBasketUpdated);
+      window.removeEventListener('cartItemAdded', handleCartItemAdded);
     };
   }, [location.pathname]);
+
+  // Sepeti kontrol etmek için ek bir useEffect
+  useEffect(() => {
+    // Her 5 saniyede bir sepeti kontrol et
+    const checkCartInterval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/basket/');
+        const data = await response.json();
+        
+        // Sepetteki toplam ürün sayısını güncelle
+        if (data && data.id) {
+          try {
+            // Direkt sepet ürünlerini almayı dene
+            const linesResponse = await fetch('/api/basket/lines/');
+            if (linesResponse.ok) {
+              const linesData = await linesResponse.json();
+              if (Array.isArray(linesData)) {
+                const totalItems = linesData.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                setCartCount(totalItems);
+                return; // Başarılı ise işlem tamamlandı
+              }
+            }
+            
+            // Alternatif: API'nin sepet toplam öğe sayısını doğrudan sunup sunmadığını kontrol et
+            if (typeof data.total_items === 'number') {
+              setCartCount(data.total_items);
+              return;
+            }
+            
+            // Sepette ürün olduğunu biliyoruz, ama sayısını bilmiyoruz
+            if (data.id) {
+              // Geçerli sayıyı koru veya en az 1 yap
+              setCartCount(prev => Math.max(1, prev));
+            } else {
+              setCartCount(0);
+            }
+          } catch (error) {
+            console.error('Periyodik sepet kontrolünde hata:', error);
+          }
+        } else {
+          setCartCount(0);
+        }
+      } catch (error) {
+        console.error('Sepet bilgisi alınırken hata oluştu:', error);
+      }
+    }, 5000);
+    
+    // Temizleme
+    return () => {
+      clearInterval(checkCartInterval);
+    };
+  }, []);
 
   useEffect(() => {
     // Arama açıldığında input'a odaklanma

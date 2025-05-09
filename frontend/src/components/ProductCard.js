@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, Button, Badge } from 'react-bootstrap';
-import { FaStar, FaHeart, FaShoppingCart, FaEye, FaRegHeart } from 'react-icons/fa';
+import { FaStar, FaHeart, FaShoppingCart, FaEye, FaRegHeart, FaSpinner } from 'react-icons/fa';
 import './ProductCard.css';
 
 const ProductCard = ({ product }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   // Discount calculation
   const hasDiscount = product.sale_price && product.price > product.sale_price;
@@ -21,8 +22,61 @@ const ProductCard = ({ product }) => {
   // Add to cart handler
   const handleAddToCart = (e) => {
     e.preventDefault();
-    // API call to add product to cart
-    console.log(`Ürün sepete eklendi: ${product.name}`);
+    
+    // Butonun durmunu yükleniyor olarak güncelle
+    setIsAddingToCart(true);
+    
+    // Ürün ID'si ve URL formatını kontrol et
+    let productId = product.id;
+    if (!productId && product.url) {
+      // Bazen URL'den ID çıkarılabilir
+      const urlParts = product.url.split('/');
+      productId = urlParts[urlParts.length - 2]; // URL sonundaki slash'tan önceki değer
+    }
+    
+    if (!productId) {
+      console.error('Ürün ID bilgisi bulunamadı:', product);
+      alert('Ürün eklenemiyor: Ürün bilgisi eksik.');
+      setIsAddingToCart(false);
+      return;
+    }
+    
+    // API çağrısı ile sepete ürün ekleme
+    fetch('/api/basket/add-product/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: `/api/products/${productId}/`,
+        quantity: 1
+      })
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Sepete ekleme işlemi başarısız oldu: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Ürün sepete eklendi:', data);
+        
+        // Başarılı bildirim göster
+        const productName = product.name || product.title || 'Ürün';
+        alert(`${productName} sepete eklendi!`);
+        
+        // Sepet bilgisini güncelle
+        const event = new CustomEvent('basketUpdated');
+        window.dispatchEvent(event);
+      })
+      .catch(error => {
+        console.error('Sepete eklerken hata oluştu:', error);
+        alert('Sepete eklerken bir hata oluştu. Lütfen tekrar deneyin.');
+      })
+      .finally(() => {
+        // İşlem tamamlandığında butonu normal duruma getir
+        setIsAddingToCart(false);
+      });
   };
 
   // Toggle favorite handler
@@ -112,8 +166,17 @@ const ProductCard = ({ product }) => {
             variant="primary" 
             className="action-btn add-to-cart-btn"
             onClick={handleAddToCart}
+            disabled={isAddingToCart}
           >
-            <FaShoppingCart /> <span>Sepete Ekle</span>
+            {isAddingToCart ? (
+              <>
+                <FaSpinner className="fa-spin" /> <span>Ekleniyor...</span>
+              </>
+            ) : (
+              <>
+                <FaShoppingCart /> <span>Sepete Ekle</span>
+              </>
+            )}
           </Button>
           <Button 
             variant="light" 

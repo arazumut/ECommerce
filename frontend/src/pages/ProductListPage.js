@@ -70,9 +70,23 @@ const ProductListPage = () => {
         
         const response = await fetch(apiUrl);
         const data = await response.json();
+        console.log("Ürün listesi verileri:", data);
         
-        setProducts(data.results || []);
-        setTotalPages(Math.ceil((data.count || 0) / 20));
+        // Verileri frontend'in beklediği formata dönüştür
+        const formattedProducts = Array.isArray(data) ? data.map(product => ({
+          id: product.id,
+          title: product.title,
+          description: product.description || '',
+          price: '1199.99', // Örnek fiyat
+          slug: product.id.toString(), // slug yerine id
+          image: `/media/images/products/2025/05/Ekran_Resmi_2025-05-05_18.28.46.png`, // Sabit resim URL'si
+          rating: 4, // Örnek değer
+          rating_count: 15, // Örnek değer
+          is_on_sale: false
+        })) : [];
+        
+        setProducts(formattedProducts);
+        setTotalPages(Math.ceil((formattedProducts.length || 0) / 20));
       } catch (error) {
         console.error('Ürünler yüklenirken hata oluştu:', error);
       } finally {
@@ -82,7 +96,7 @@ const ProductListPage = () => {
 
     const fetchCategories = async () => {
       try {
-        const response = await fetch('/api/catalogue/categories/');
+        const response = await fetch('/api/categories/');
         const data = await response.json();
         setCategories(data);
         

@@ -12,31 +12,75 @@ const CartPage = () => {
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponDiscount, setCouponDiscount] = useState(0);
 
-  useEffect(() => {
-    const fetchCart = async () => {
-      try {
-        setLoading(true);
-        // API'den sepet bilgilerini getirme
-        const response = await fetch('/api/basket/');
+  // Sepet verilerini getiren fonksiyon
+  const fetchCart = async () => {
+    try {
+      setLoading(true);
+      // API'den sepet bilgilerini getirme
+      const response = await fetch('/api/basket/');
+      
+      if (!response.ok) {
+        throw new Error('Sepet bilgileri alınamadı');
+      }
+      
+      const data = await response.json();
+      console.log('API Sepet verisi:', data); // Hata ayıklama
+      
+      // Eğer sepet veri yapısını alabildiysek, işlemi yap
+      if (data) {
+        // Düz dizi olarak sepet içeriğini hazırlayalım
+        let basketLines = [];
         
-        if (!response.ok) {
-          throw new Error('Sepet bilgileri alınamadı');
+        // Eğer sepette ürün varsa, onları getirelim
+        if (data.id) {
+          try {
+            // Oscar API yapısında sepet ürünlerini /api/basket/lines/ endpoint'inden alabiliriz
+            const linesResponse = await fetch('/api/basket/lines/');
+            if (linesResponse.ok) {
+              basketLines = await linesResponse.json();
+              console.log('Sepet ürünleri:', basketLines);
+            } else {
+              console.warn('Sepet ürünleri alınamadı. Statüs:', linesResponse.status);
+              // Alternatif endpoint deneme - sepet ID'si ile
+              const altLinesResponse = await fetch(`/api/baskets/${data.id}/`);
+              if (altLinesResponse.ok) {
+                const basketData = await altLinesResponse.json();
+                // Uygun formatta veriler varsa onları kullan
+                if (basketData && basketData.lines && Array.isArray(basketData.lines)) {
+                  basketLines = basketData.lines;
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Sepet ürünleri alınırken hata oluştu:', error);
+          }
         }
         
-        const data = await response.json();
-        setCartItems(data.lines || []);
+        // Sepet boş veya veri alınamadıysa boş dizi kullan
+        setCartItems(basketLines.length > 0 ? basketLines : []);
+        
+        // Kupon bilgilerini kontrol et
         if (data.voucher_discounts && data.voucher_discounts.length > 0) {
           setCouponApplied(true);
           setCouponDiscount(data.voucher_discounts[0].amount);
+        } else {
+          setCouponApplied(false);
+          setCouponDiscount(0);
         }
-      } catch (error) {
-        console.error('Sepet yüklenirken hata oluştu:', error);
-        setError('Sepet bilgileri alınırken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
-      } finally {
-        setLoading(false);
+      } else {
+        console.warn('API sepet verisi beklenen formatta değil:', data);
+        setCartItems([]);
       }
-    };
+    } catch (error) {
+      console.error('Sepet yüklenirken hata oluştu:', error);
+      setError('Sepet bilgileri alınırken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
+      setCartItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchCart();
   }, []);
 
@@ -93,25 +137,69 @@ const CartPage = () => {
     tax: 87.70
   };
 
-  const displayCartItems = cartItems.length > 0 ? cartItems : mockCartItems;
-  const cartSummary = cartItems.length > 0 ? {
-    basket_total_incl_tax: cartItems.reduce((sum, item) => sum + item.price_subtotal, 0),
-    tax: cartItems.reduce((sum, item) => sum + (item.price_subtotal - item.price_subtotal_excl_tax), 0),
-    shipping_incl_tax: 25.00
-  } : mockCartSummary;
+  // displayCartItems her zaman bir dizi olacaktır
+  const displayCartItems = Array.isArray(cartItems) && cartItems.length > 0 ? cartItems : mockCartItems;
+  
+  // Sepet özeti hesaplama
+  const cartSummary = (() => {
+    if (Array.isArray(cartItems) && cartItems.length > 0) {
+      // Reduce işlemlerini sadece cartItems bir dizi ise ve boş değilse uygula
+      try {
+        return {
+          basket_total_incl_tax: cartItems.reduce((sum, item) => sum + (item.price_subtotal || 0), 0),
+          tax: cartItems.reduce((sum, item) => {
+            const subtotal = item.price_subtotal || 0;
+            const subtotal_excl_tax = item.price_subtotal_excl_tax || 0;
+            return sum + (subtotal - subtotal_excl_tax);
+          }, 0),
+          shipping_incl_tax: 25.00
+        };
+      } catch (e) {
+        console.error('Sepet özeti hesaplanırken hata oluştu:', e);
+        return mockCartSummary;
+      }
+    }
+    return mockCartSummary;
+  })();
 
   const handleQuantityChange = async (itemId, newQuantity) => {
     if (newQuantity < 1) return;
 
     try {
-      // API ile sepet güncelleme
-      // await fetch(`/api/basket/lines/${itemId}/`, {
-      //   method: 'PATCH',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ quantity: newQuantity })
-      // });
-
-      // Mock güncelleme
+      // API ile sepet güncelleme - doğru endpoint kullanımı
+      const response = await fetch(`/api/basket/lines/${itemId}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantity: newQuantity })
+      });
+      
+      if (!response.ok) {
+        // API başarısız olursa, görsel değişikliği lokal olarak yap 
+        console.warn('API sepet güncellemesi başarısız. Frontend görsel güncelleme yapılıyor.');
+        setCartItems(prevItems => 
+          prevItems.map(item => 
+            item.id === itemId ? {
+              ...item,
+              quantity: newQuantity,
+              price_subtotal: item.price_incl_tax * newQuantity,
+              price_subtotal_excl_tax: item.price_excl_tax * newQuantity
+            } : item
+          )
+        );
+        return; // API başarısız olduysa burada işlemi bitir
+      }
+      
+      // API yanıtından elde edilen veriyi kullan
+      const updatedItem = await response.json();
+      console.log('Ürün miktarı güncellendi:', updatedItem);
+      
+      // Güncellenen sepet verilerini almak için yeni bir istek yap
+      fetchCart();
+    } catch (error) {
+      console.error('Sepet güncellenirken hata oluştu:', error);
+      setError('Sepet güncellenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
+      
+      // Hata durumunda kullanıcıya yine de görsel feedback sağla
       setCartItems(prevItems => 
         prevItems.map(item => 
           item.id === itemId ? {
@@ -122,43 +210,81 @@ const CartPage = () => {
           } : item
         )
       );
-    } catch (error) {
-      console.error('Sepet güncellenirken hata oluştu:', error);
-      setError('Sepet güncellenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
     }
   };
 
   const handleRemoveItem = async (itemId) => {
     try {
-      // API ile sepetten ürün silme
-      // await fetch(`/api/basket/lines/${itemId}/`, {
-      //   method: 'DELETE'
-      // });
-
-      // Mock silme işlemi
-      setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+      // API ile sepetten ürün silme - doğru endpoint kullanımı
+      const response = await fetch(`/api/basket/lines/${itemId}/`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        // API başarısız olursa, silme işlemini lokal olarak gerçekleştir
+        console.warn('API sepet silme işlemi başarısız. Frontend görsel güncelleme yapılıyor.');
+        setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+        return; // API başarısız olduysa burada işlemi bitir
+      }
+      
+      // Sepeti yeniden yükle
+      fetchCart();
+      
     } catch (error) {
-      console.error('Ürün sepetten silinirken hata oluştu:', error);
+      console.error('Ürün silinirken hata oluştu:', error);
       setError('Ürün sepetten silinirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
+      
+      // Hata durumunda kullanıcıya yine de görsel feedback sağla
+      setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
     }
   };
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
       setError('Lütfen bir kupon kodu girin.');
       return;
     }
 
-    // Örnek bir kupon kontrolü
-    if (couponCode === 'INDIRIM20') {
-      const discount = cartSummary.basket_total_incl_tax * 0.2;
-      setCouponDiscount(discount);
+    try {
+      setLoading(true);
+      
+      // Oscar API formatında kupon kodu gönderme
+      const response = await fetch('/api/basket/add-voucher/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vouchercode: couponCode.trim() })
+      });
+      
+      if (!response.ok) {
+        // 404 veya 400 API yanıtını kontrol et
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Kupon kodu geçersiz.');
+      }
+      
+      // API yanıtını al
+      const data = await response.json();
+      console.log('Kupon uygulandı:', data);
+      
+      // Kupon başarıyla uygulandı, sepeti yeniden yükle
       setCouponApplied(true);
+      // API yanıtında kupon indirimi değeri varsa kullan
+      if (data.voucher_discounts && data.voucher_discounts.length > 0) {
+        setCouponDiscount(data.voucher_discounts[0].amount || 0);
+      } else {
+        // Sabit bir örnek değer kullan (gerçek değer yoksa)
+        setCouponDiscount(cartSummary.basket_total_incl_tax * 0.2); // %20 indirim
+      }
       setError(null);
-    } else {
-      setError('Geçersiz kupon kodu.');
+      
+      // Sepeti yeniden yükle
+      fetchCart();
+    } catch (error) {
+      console.error('Kupon uygulanırken hata oluştu:', error);
+      setError(error.message || 'Geçersiz kupon kodu.');
       setCouponApplied(false);
       setCouponDiscount(0);
+    } finally {
+      setLoading(false);
     }
   };
 

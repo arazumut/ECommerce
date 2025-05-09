@@ -15,7 +15,31 @@ const HomePage = () => {
       try {
         const response = await fetch('/api/products/?featured=true');
         const data = await response.json();
-        setFeaturedProducts(data.results || []);
+        console.log("Gelen ürün verileri:", data);
+        
+        // Verileri frontend'in beklediği formata dönüştür
+        const formattedProducts = Array.isArray(data) ? data.map(product => {
+          // Ürün resimlerini almak için ek bir istek
+          fetch(`/api/products/${product.id}/`)
+            .then(response => response.json())
+            .then(detail => {
+              console.log("Ürün detayı:", detail);
+            })
+            .catch(error => console.error("Ürün detayı alınırken hata:", error));
+          
+          return {
+            id: product.id,
+            title: product.title,
+            description: product.description || '',
+            price: '1299.99', // Örnek fiyat, gerçek veri gelince kaldırılabilir
+            slug: product.id.toString(), // slug yerine id kullan
+            image: `/media/images/products/2025/05/Ekran_Resmi_2025-05-05_18.28.46.png`, // Resim URL'si
+            rating: 4, // Örnek değer
+            rating_count: 12, // Örnek değer
+          };
+        }) : [];
+        
+        setFeaturedProducts(formattedProducts);
       } catch (error) {
         console.error('Ürünler yüklenirken hata oluştu:', error);
       }
@@ -25,7 +49,20 @@ const HomePage = () => {
       try {
         const response = await fetch('/api/products/?ordering=-date_created&limit=8');
         const data = await response.json();
-        setNewArrivals(data.results || []);
+        
+        // Verileri frontend'in beklediği formata dönüştür
+        const formattedProducts = Array.isArray(data) ? data.map(product => ({
+          id: product.id,
+          title: product.title,
+          description: product.description || '',
+          price: '999.99', // Örnek fiyat, gerçek veri gelince kaldırılabilir
+          slug: product.id.toString(), // slug yerine id kullan
+          image: `/media/images/products/2025/05/Ekran_Resmi_2025-05-05_18.28.46.png`, // Sabit resim URL'si
+          rating: 3, // Örnek değer
+          rating_count: 8, // Örnek değer
+        })) : [];
+        
+        setNewArrivals(formattedProducts);
       } catch (error) {
         console.error('Yeni ürünler yüklenirken hata oluştu:', error);
       }
@@ -33,7 +70,7 @@ const HomePage = () => {
 
     const fetchCategories = async () => {
       try {
-        const response = await fetch('/api/catalogue/categories/');
+        const response = await fetch('/api/categories/');
         const data = await response.json();
         setCategories(data);
       } catch (error) {
