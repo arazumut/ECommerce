@@ -1,6 +1,6 @@
 {
-  "short_name": "E-Ticaret",
-  "name": "Modern E-Ticaret Uygulaması",
+  "short_name": "EcommerceApp",
+  "name": "Ecommerce React Application",
   "icons": [
     {
       "src": "favicon.ico",
@@ -8,12 +8,12 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
+      "src": "img/logo192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "logo512.png",
+      "src": "img/logo512.png",
       "type": "image/png",
       "sizes": "512x512"
     }

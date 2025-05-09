@@ -428,7 +428,7 @@ const ProductDetailPage = () => {
                   </Button>
                 </div>
               </div>
-              
+
 
               {/* Delivery and Returns */}
               <div className="product-info-items mb-4">
@@ -465,15 +465,15 @@ const ProductDetailPage = () => {
                   <span>Bu ürünü paylaş:</span>
                 </div>
                 <div className="share-buttons">
-                  <a href="#" className="share-button me-2">
+                  <button onClick={() => window.open('https://www.facebook.com/sharer/sharer.php', '_blank')} className="share-button me-2 btn btn-link p-0">
                     <FaFacebook />
-                  </a>
-                  <a href="#" className="share-button me-2">
+                  </button>
+                  <button onClick={() => window.open('https://twitter.com/intent/tweet', '_blank')} className="share-button me-2 btn btn-link p-0">
                     <FaTwitter />
-                  </a>
-                  <a href="#" className="share-button">
+                  </button>
+                  <button onClick={() => window.open('https://www.instagram.com', '_blank')} className="share-button btn btn-link p-0">
                     <FaInstagram />
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>

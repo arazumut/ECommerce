@@ -24,7 +24,7 @@ const CartPage = () => {
       }
       
       const data = await response.json();
-      console.log('API Sepet verisi:', data); // Hata ayıklama
+      console.log('API Sepet verisi:', data);
       
       // Eğer sepet veri yapısını alabildiysek, işlemi yap
       if (data) {
@@ -34,21 +34,27 @@ const CartPage = () => {
         // Eğer sepette ürün varsa, onları getirelim
         if (data.id) {
           try {
-            // Oscar API yapısında sepet ürünlerini /api/basket/lines/ endpoint'inden alabiliriz
-            const linesResponse = await fetch('/api/basket/lines/');
+            // Oscar API yapısında sepet ürünlerinin doğru endpoint'ini kullanalım
+            // Öncelikle sepet kimliği üzerinden ürünleri alalım
+            const linesResponse = await fetch(`/api/baskets/${data.id}/lines/`);
             if (linesResponse.ok) {
               basketLines = await linesResponse.json();
               console.log('Sepet ürünleri:', basketLines);
             } else {
-              console.warn('Sepet ürünleri alınamadı. Statüs:', linesResponse.status);
-              // Alternatif endpoint deneme - sepet ID'si ile
-              const altLinesResponse = await fetch(`/api/baskets/${data.id}/`);
-              if (altLinesResponse.ok) {
-                const basketData = await altLinesResponse.json();
+              console.warn('Sepet ürünleri endpointinden veri alınamadı. Statüs:', linesResponse.status);
+              
+              // Alternatif endpoint deneme - direkt sepet detaylarını alalım
+              const basketDetailResponse = await fetch(`/api/baskets/${data.id}/`);
+              if (basketDetailResponse.ok) {
+                const basketData = await basketDetailResponse.json();
+                console.log('Alternatif sepet detayları:', basketData);
+                
                 // Uygun formatta veriler varsa onları kullan
                 if (basketData && basketData.lines && Array.isArray(basketData.lines)) {
                   basketLines = basketData.lines;
                 }
+              } else {
+                console.warn('Alternatif sepet detayları alınamadı. Statüs:', basketDetailResponse.status);
               }
             }
           } catch (error) {
@@ -166,16 +172,27 @@ const CartPage = () => {
     if (newQuantity < 1) return;
 
     try {
-      // API ile sepet güncelleme - doğru endpoint kullanımı
-      const response = await fetch(`/api/basket/lines/${itemId}/`, {
+      // Önce sepet bilgisini alarak sepet ID'sini öğrenelim
+      const basketResponse = await fetch('/api/basket/');
+      if (!basketResponse.ok) {
+        throw new Error('Sepet bilgisi alınamadı');
+      }
+      
+      const basketData = await basketResponse.json();
+      if (!basketData.id) {
+        throw new Error('Sepet ID bulunamadı');
+      }
+      
+      // Doğru endpoint ile sepet ürününü güncelle
+      const response = await fetch(`/api/baskets/${basketData.id}/lines/${itemId}/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity: newQuantity })
       });
       
       if (!response.ok) {
+        console.warn('API sepet güncellemesi başarısız. Statüs:', response.status);
         // API başarısız olursa, görsel değişikliği lokal olarak yap 
-        console.warn('API sepet güncellemesi başarısız. Frontend görsel güncelleme yapılıyor.');
         setCartItems(prevItems => 
           prevItems.map(item => 
             item.id === itemId ? {
@@ -215,14 +232,25 @@ const CartPage = () => {
 
   const handleRemoveItem = async (itemId) => {
     try {
-      // API ile sepetten ürün silme - doğru endpoint kullanımı
-      const response = await fetch(`/api/basket/lines/${itemId}/`, {
+      // Önce sepet bilgisini alarak sepet ID'sini öğrenelim
+      const basketResponse = await fetch('/api/basket/');
+      if (!basketResponse.ok) {
+        throw new Error('Sepet bilgisi alınamadı');
+      }
+      
+      const basketData = await basketResponse.json();
+      if (!basketData.id) {
+        throw new Error('Sepet ID bulunamadı');
+      }
+      
+      // Doğru endpoint ile sepet ürününü sil
+      const response = await fetch(`/api/baskets/${basketData.id}/lines/${itemId}/`, {
         method: 'DELETE'
       });
       
       if (!response.ok) {
+        console.warn('API sepet silme işlemi başarısız. Statüs:', response.status);
         // API başarısız olursa, silme işlemini lokal olarak gerçekleştir
-        console.warn('API sepet silme işlemi başarısız. Frontend görsel güncelleme yapılıyor.');
         setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
         return; // API başarısız olduysa burada işlemi bitir
       }
@@ -383,7 +411,7 @@ const CartPage = () => {
                             )}
                           </td>
                           <td className="price">
-                            {item.price_incl_tax.toFixed(2)} TL
+                            {parseFloat(item.price_incl_tax || 0).toFixed(2)} TL
                           </td>
                           <td>
                             <div className="quantity-control">
@@ -406,7 +434,7 @@ const CartPage = () => {
                             </div>
                           </td>
                           <td className="subtotal">
-                            {item.price_subtotal.toFixed(2)} TL
+                            {parseFloat(item.price_subtotal || 0).toFixed(2)} TL
                           </td>
                           <td>
                             <Button 
@@ -445,31 +473,31 @@ const CartPage = () => {
               <Card.Body>
                 <div className="summary-item d-flex justify-content-between mb-2">
                   <span>Ara Toplam:</span>
-                  <span>{cartSummary.basket_total_incl_tax.toFixed(2)} TL</span>
+                  <span>{parseFloat(cartSummary.basket_total_incl_tax || 0).toFixed(2)} TL</span>
                 </div>
                 
                 {couponApplied && (
                   <div className="summary-item d-flex justify-content-between mb-2 discount">
                     <span>İndirim:</span>
-                    <span>-{couponDiscount.toFixed(2)} TL</span>
+                    <span>-{parseFloat(couponDiscount || 0).toFixed(2)} TL</span>
                   </div>
                 )}
                 
                 <div className="summary-item d-flex justify-content-between mb-2">
                   <span>Kargo:</span>
-                  <span>{cartSummary.shipping_incl_tax.toFixed(2)} TL</span>
+                  <span>{parseFloat(cartSummary.shipping_incl_tax || 0).toFixed(2)} TL</span>
                 </div>
                 
                 <div className="summary-item d-flex justify-content-between mb-2">
                   <span>KDV:</span>
-                  <span>{cartSummary.tax.toFixed(2)} TL</span>
+                  <span>{parseFloat(cartSummary.tax || 0).toFixed(2)} TL</span>
                 </div>
                 
                 <hr />
                 
                 <div className="summary-total d-flex justify-content-between mb-3">
                   <span>Genel Toplam:</span>
-                  <span className="total-price">{grandTotal.toFixed(2)} TL</span>
+                  <span className="total-price">{parseFloat(grandTotal || 0).toFixed(2)} TL</span>
                 </div>
                 
                 <Button 

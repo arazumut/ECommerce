@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Form, Breadcrumb, Pagination } from 'react-bootstrap';
 import { Link, useParams, useLocation } from 'react-router-dom';
-import { FaStar, FaFilter, FaArrowDown, FaArrowUp } from 'react-icons/fa';
+import { FaStar, FaFilter } from 'react-icons/fa';
 import './ProductListPage.css';
 
 const ProductListPage = () => {
@@ -162,6 +162,9 @@ const ProductListPage = () => {
         <Pagination.Prev key="prev" onClick={() => handlePageChange(currentPage - 1)} />
       );
     }
+
+    console.log('Sayfa numaraları:', items);
+    
     
     if (startPage > 1) {
       items.push(

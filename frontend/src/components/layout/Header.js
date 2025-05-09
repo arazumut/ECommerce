@@ -37,17 +37,28 @@ const Header = () => {
         const data = await response.json();
         
         // Sepetteki toplam ürün sayısını ayarla
-        // Oscar API'de sepet içeriğini doğrudan almayı deneyelim
+        // Oscar API'de sepet içeriğini doğrudan alalım
         if (data && data.id) {
           try {
-            // Direkt sepet ürünlerini almayı dene
-            const linesResponse = await fetch('/api/basket/lines/');
+            // Sepet ID'si ile sepet ürünlerini alalım
+            const linesResponse = await fetch(`/api/baskets/${data.id}/lines/`);
             if (linesResponse.ok) {
               const linesData = await linesResponse.json();
               if (Array.isArray(linesData)) {
                 const totalItems = linesData.reduce((sum, item) => sum + (item.quantity || 0), 0);
                 setCartCount(totalItems);
                 return; // Başarılı ise işlem tamamlandı
+              }
+            }
+            
+            // Alternatif: Sepet detaylarından içeriği alalım
+            const basketDetailResponse = await fetch(`/api/baskets/${data.id}/`);
+            if (basketDetailResponse.ok) {
+              const basketData = await basketDetailResponse.json();
+              if (basketData && basketData.lines && Array.isArray(basketData.lines)) {
+                const totalItems = basketData.lines.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                setCartCount(totalItems);
+                return;
               }
             }
             
@@ -149,14 +160,25 @@ const Header = () => {
         // Sepetteki toplam ürün sayısını güncelle
         if (data && data.id) {
           try {
-            // Direkt sepet ürünlerini almayı dene
-            const linesResponse = await fetch('/api/basket/lines/');
+            // Sepet ID'si ile sepet ürünlerini alalım
+            const linesResponse = await fetch(`/api/baskets/${data.id}/lines/`);
             if (linesResponse.ok) {
               const linesData = await linesResponse.json();
               if (Array.isArray(linesData)) {
                 const totalItems = linesData.reduce((sum, item) => sum + (item.quantity || 0), 0);
                 setCartCount(totalItems);
                 return; // Başarılı ise işlem tamamlandı
+              }
+            }
+            
+            // Alternatif: Sepet detaylarından içeriği alalım
+            const basketDetailResponse = await fetch(`/api/baskets/${data.id}/`);
+            if (basketDetailResponse.ok) {
+              const basketData = await basketDetailResponse.json();
+              if (basketData && basketData.lines && Array.isArray(basketData.lines)) {
+                const totalItems = basketData.lines.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                setCartCount(totalItems);
+                return;
               }
             }
             

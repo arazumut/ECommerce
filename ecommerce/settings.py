@@ -79,6 +79,9 @@ INSTALLED_APPS = [
     'oscarapi',
     'corsheaders',
     
+    # Custom apps
+    'api_redirects',
+    
     # Haystack
     'haystack',
     

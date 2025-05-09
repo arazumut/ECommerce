@@ -41,17 +41,27 @@ const ProductCard = ({ product }) => {
       return;
     }
     
-    // API çağrısı ile sepete ürün ekleme
-    fetch('/api/basket/add-product/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: `/api/products/${productId}/`,
-        quantity: 1
+    // Sepet bilgisini al ve sepet ID'sini kontrol et
+    fetch('/api/basket/')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Sepet bilgisi alınamadı: ${response.status}`);
+        }
+        return response.json();
       })
-    })
+      .then(basketData => {
+        // API çağrısı ile sepete ürün ekleme
+        return fetch('/api/basket/add-product/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: `/api/products/${productId}/`,
+            quantity: 1
+          })
+        });
+      })
       .then(response => {
         if (!response.ok) {
           throw new Error(`Sepete ekleme işlemi başarısız oldu: ${response.status}`);

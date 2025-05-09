@@ -26,7 +26,10 @@ urlpatterns = [
     # Oscar URLs
     path('', include(apps.get_app_config('oscar').urls[0])),
     
-    # Oscar API URLs
+    # Custom API redirect URLs
+    path('api/', include('api_redirects.urls')),
+    
+    # Oscar API URLs (after custom redirects to ensure precedence)
     path('api/', include('oscarapi.urls')),
 ]
 

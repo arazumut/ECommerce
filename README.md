@@ -170,16 +170,3 @@ The React application can be built using:
 cd frontend
 npm run build
 ```
-
-The build artifacts will be stored in the `frontend/build` directory, ready to be deployed to any static hosting service.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgements
-
-- [Django Oscar](https://github.com/django-oscar/django-oscar) - For the e-commerce framework
-- [Oscar API](https://github.com/django-oscar/django-oscar-api) - For the RESTful API
-- [React](https://reactjs.org/) - For the frontend library
-- [React Bootstrap](https://react-bootstrap.github.io/) - For UI components 
