@@ -120,7 +120,7 @@ const LoginPage = () => {
                       id="rememberMe"
                       label="Beni hatırla"
                       checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
+                      onChange={(e) => setRememberMe(e.target.checked)}                    
                     />
                     <Link to="/forgot-password" className="forgot-password">
                       Şifremi Unuttum

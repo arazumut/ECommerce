@@ -125,7 +125,43 @@ const ProductDetailPage = () => {
         
         // Başarı mesajı göster
         const productTitle = product?.title || displayProduct?.title || 'Ürün';
-        alert(`${quantity} adet ${productTitle} sepete eklendi!`);
+        
+        // Daha modern bir toast gösterimi veya bildirim için alert yerine
+        // custom bir toast bileşeni kullanılabilir
+        const successDiv = document.createElement('div');
+        successDiv.className = 'cart-success-toast';
+        successDiv.innerHTML = `
+          <div class="cart-success-content">
+            <div class="cart-success-icon">✓</div>
+            <div class="cart-success-message">
+              <strong>${quantity} adet ${productTitle}</strong> sepete eklendi!
+            </div>
+          </div>
+          <div class="cart-success-actions">
+            <a href="/cart" class="btn btn-primary btn-sm">Sepete Git</a>
+            <button class="btn btn-link btn-sm close-toast">Kapat</button>
+          </div>
+        `;
+        document.body.appendChild(successDiv);
+        
+        // Toast'u otomatik kapat
+        setTimeout(() => {
+          successDiv.classList.add('fade-out');
+          setTimeout(() => {
+            document.body.removeChild(successDiv);
+          }, 300);
+        }, 5000);
+        
+        // Toast'ı manuel kapatma
+        const closeBtn = successDiv.querySelector('.close-toast');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', () => {
+            successDiv.classList.add('fade-out');
+            setTimeout(() => {
+              document.body.removeChild(successDiv);
+            }, 300);
+          });
+        }
         
         // Sepet bilgisini güncelle
         const event = new CustomEvent('basketUpdated');
@@ -142,8 +178,79 @@ const ProductDetailPage = () => {
   };
 
   const addToWishlist = () => {
-    // Favorilere ekleme işlemi burada yapılacak
-    console.log(`${product?.title} favorilere eklendi.`);
+    // Ürün ID'si kontrolü
+    let productId = product?.id;
+    if (!productId && product?.url) {
+      // Bazen URL'den ID çıkarılabilir
+      const urlParts = product.url.split('/');
+      productId = urlParts[urlParts.length - 2]; // URL sonundaki slash'tan önceki değer
+    }
+    
+    if (!productId) {
+      console.error('Ürün ID bilgisi bulunamadı:', product);
+      showToast('Favorilere eklenemiyor: Ürün bilgisi eksik.', 'error');
+      return;
+    }
+      
+    // Yerel depolamadan mevcut favorileri al
+    const storedWishlist = localStorage.getItem('wishlist');
+    let wishlistData = storedWishlist ? JSON.parse(storedWishlist) : [];
+    
+    // Ürün zaten favorilerde mi kontrol et
+    if (wishlistData.includes(productId)) {
+      // Ürün zaten favori listesinde
+      showToast('Bu ürün zaten favorilerinize eklenmiş.', 'info');
+      return;
+    }
+    
+    // Favorilere ekle
+    wishlistData.push(productId);
+    localStorage.setItem('wishlist', JSON.stringify(wishlistData));
+    
+    // Başarı bildirimi göster
+    const productTitle = product?.title || displayProduct?.title || 'Ürün';
+    showToast(`${productTitle} favorilere eklendi!`, 'success');
+    
+    // Favoriler güncellendi olayını tetikle
+    const event = new CustomEvent('wishlistUpdated');
+    window.dispatchEvent(event);
+  };
+
+  const showToast = (message, type = 'info') => {
+    // Toast mesajını gösterecek fonksiyon
+    const toastDiv = document.createElement('div');
+    toastDiv.className = `cart-success-toast toast-${type}`;
+    toastDiv.innerHTML = `
+      <div class="cart-success-content">
+        <div class="cart-success-icon">${type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ'}</div>
+        <div class="cart-success-message">
+          <strong>${message}</strong>
+        </div>
+      </div>
+      <div class="cart-success-actions">
+        <button class="btn btn-link btn-sm close-toast">Kapat</button>
+      </div>
+    `;
+    document.body.appendChild(toastDiv);
+    
+    // Toast'u otomatik kapat
+    setTimeout(() => {
+      toastDiv.classList.add('fade-out');
+      setTimeout(() => {
+        document.body.removeChild(toastDiv);
+      }, 300);
+    }, 5000);
+    
+    // Manuel kapatma butonu
+    const closeBtn = toastDiv.querySelector('.close-toast');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        toastDiv.classList.add('fade-out');
+        setTimeout(() => {
+          document.body.removeChild(toastDiv);
+        }, 300);
+      });
+    }
   };
 
   // Mock ürün verileri (API'den gerçek veri gelene kadar)

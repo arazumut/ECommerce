@@ -1,0 +1,203 @@
+.wishlist-page {
+  min-height: 70vh;
+}
+
+.page-title {
+  font-weight: 700;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: var(--gray-800);
+}
+
+.wishlist-item {
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.wishlist-item:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px);
+}
+
+.wishlist-item .card-img-top {
+  height: 220px;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.wishlist-item:hover .card-img-top {
+  transform: scale(1.05);
+}
+
+.wishlist-item .card-body {
+  padding: 1.25rem;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  color: var(--danger);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.wishlist-item:hover .remove-btn {
+  opacity: 1;
+}
+
+.remove-btn:hover {
+  background-color: var(--danger) !important;
+  color: white !important;
+}
+
+.product-title {
+  color: var(--gray-800);
+  font-weight: 600;
+  text-decoration: none;
+  display: block;
+  margin-bottom: 0.75rem;
+  min-height: 44px;
+}
+
+.product-title:hover {
+  color: var(--primary);
+}
+
+.product-price {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.current-price {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-right: 0.5rem;
+}
+
+.old-price {
+  font-size: 1rem;
+  text-decoration: line-through;
+  color: var(--gray-500);
+}
+
+.stock-status {
+  margin-top: auto;
+}
+
+@media (max-width: 767.98px) {
+  .wishlist-item .card-img-top {
+    height: 180px;
+  }
+  
+  .product-title {
+    min-height: auto;
+  }
+}
+
+/* Toast stilleri */
+.cart-success-toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background-color: white;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 16px;
+  width: 320px;
+  max-width: 90vw;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: slideIn 0.3s forwards;
+  border-left: 4px solid var(--info);
+}
+
+.cart-success-toast.toast-success {
+  border-left-color: var(--success);
+}
+
+.cart-success-toast.toast-error {
+  border-left-color: var(--danger);
+}
+
+.cart-success-toast.toast-info {
+  border-left-color: var(--info);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.cart-success-toast.fade-out {
+  animation: slideOut 0.3s forwards;
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.cart-success-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cart-success-icon {
+  background-color: var(--info);
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.toast-success .cart-success-icon {
+  background-color: var(--success);
+}
+
+.toast-error .cart-success-icon {
+  background-color: var(--danger);
+}
+
+.cart-success-message {
+  flex: 1;
+}
+
+.cart-success-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 5px;
+} 

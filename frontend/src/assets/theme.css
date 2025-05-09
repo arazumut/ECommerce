@@ -1,30 +1,71 @@
 /* E-Ticaret Uygulaması - Ana Tema */
 :root {
-  /* Ana Renk Paleti */
-  --primary: #3b82f6;
-  --primary-dark: #1d4ed8;
-  --primary-light: #60a5fa;
-  --secondary: #f97316;
-  --secondary-dark: #ea580c;
-  --secondary-light: #fb923c;
-  --success: #10b981;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --info: #0ea5e9;
+  /* Ana Renkler */
+  --primary: #4a89dc;
+  --primary-dark: #3a70b5;
+  --primary-light: #6aa1ef;
+  --secondary: #f39c12;
+  --secondary-dark: #cc8311;
+  --secondary-light: #ffb74d;
   
   /* Nötr Renkler */
-  --dark: #1e293b;
-  --gray-900: #0f172a;
-  --gray-800: #1e293b;
-  --gray-700: #334155;
-  --gray-600: #475569;
-  --gray-500: #64748b;
-  --gray-400: #94a3b8;
-  --gray-300: #cbd5e1;
-  --gray-200: #e2e8f0;
-  --gray-100: #f1f5f9;
-  --light: #f8fafc;
   --white: #ffffff;
+  --gray-100: #f8f9fa;
+  --gray-200: #e9ecef;
+  --gray-300: #dee2e6;
+  --gray-400: #ced4da;
+  --gray-500: #adb5bd;
+  --gray-600: #6c757d;
+  --gray-700: #495057;
+  --gray-800: #343a40;
+  --gray-900: #212529;
+  --black: #000000;
+  
+  /* Durum Renkleri */
+  --success: #28a745;
+  --info: #17a2b8;
+  --warning: #ffc107;
+  --danger: #dc3545;
+  --light: #f8f9fa;
+  --dark: #343a40;
+  
+  /* Tema Özellikleri */
+  --body-bg: #ffffff;
+  --text-color: #212529;
+  --link-color: #4a89dc;
+  --link-hover-color: #3a70b5;
+  
+  /* Tasarım Elementleri */
+  --radius-sm: 0.2rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 1rem;
+  
+  /* Geçiş ve Animasyon */
+  --transition-fast: 0.15s;
+  --transition-normal: 0.3s;
+  --transition-slow: 0.5s;
+  --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Gölgeler */
+  --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+  
+  /* Yazı Tipi Boyutları */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  
+  /* Çizgi Kalınlıkları */
+  --border-width: 1px;
+  --border-width-md: 2px;
+  --border-width-lg: 3px;
   
   /* Gölgeler */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -36,21 +77,9 @@
   
   /* Yuvarlaklıklar */
   --radius-none: 0;
-  --radius-sm: 0.125rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
   --radius-2xl: 1rem;
   --radius-3xl: 1.5rem;
   --radius-full: 9999px;
-  
-  /* Geçişler */
-  --transition-fast: 150ms;
-  --transition-normal: 300ms;
-  --transition-slow: 500ms;
-  --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-in: cubic-bezier(0.4, 0, 1, 1);
-  --transition-out: cubic-bezier(0, 0, 0.2, 1);
   
   /* Font Boyutları */
   --text-xs: 0.75rem;
@@ -84,6 +113,24 @@
   --animate-repeat: 1;
 }
 
+/* Genel Stil Ayarları */
+body {
+  background-color: var(--body-bg);
+  color: var(--text-color);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--link-color);
+  transition: color var(--transition-fast) var(--transition-ease);
+}
+
+a:hover {
+  color: var(--link-hover-color);
+}
+
 /* Utility Classes */
 .text-primary { color: var(--primary) !important; }
 .text-secondary { color: var(--secondary) !important; }
@@ -105,15 +152,17 @@
 .bg-light { background-color: var(--light) !important; }
 .bg-white { background-color: var(--white) !important; }
 
-/* Özel Bootstrap Stil Geçersiz Kılmaları */
+/* Bootstrap Bileşen Stillerini Geçersiz Kılma */
 .btn-primary {
   background-color: var(--primary);
   border-color: var(--primary);
 }
 
-.btn-primary:hover, .btn-primary:focus {
-  background-color: var(--primary-dark);
-  border-color: var(--primary-dark);
+.btn-primary:hover,
+.btn-primary:active,
+.btn-primary:focus {
+  background-color: var(--primary-dark) !important;
+  border-color: var(--primary-dark) !important;
 }
 
 .btn-secondary {
@@ -121,9 +170,46 @@
   border-color: var(--secondary);
 }
 
-.btn-secondary:hover, .btn-secondary:focus {
-  background-color: var(--secondary-dark);
-  border-color: var(--secondary-dark);
+.btn-secondary:hover,
+.btn-secondary:active,
+.btn-secondary:focus {
+  background-color: var(--secondary-dark) !important;
+  border-color: var(--secondary-dark) !important;
+}
+
+.btn-outline-primary {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.form-control:focus {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 0.25rem rgba(74, 137, 220, 0.25);
+}
+
+.dropdown-item.active,
+.dropdown-item:active {
+  background-color: var(--primary);
+}
+
+.page-link {
+  color: var(--primary);
+}
+
+.page-item.active .page-link {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.alert-primary {
+  background-color: rgba(74, 137, 220, 0.15);
+  border-color: rgba(74, 137, 220, 0.4);
+  color: var(--primary-dark);
 }
 
 /* Animasyonlar */

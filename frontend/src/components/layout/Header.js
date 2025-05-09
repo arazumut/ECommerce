@@ -9,6 +9,7 @@ const Header = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const [showSearch, setShowSearch] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showOffcanvas, setShowOffcanvas] = useState(false);
@@ -97,6 +98,18 @@ const Header = () => {
       }
     };
 
+    // Favori sayısını kontrol eden fonksiyon
+    const checkWishlistStatus = () => {
+      try {
+        const storedWishlist = localStorage.getItem('wishlist');
+        const wishlistData = storedWishlist ? JSON.parse(storedWishlist) : [];
+        setWishlistCount(wishlistData.length);
+      } catch (error) {
+        console.error('Favori sayısı kontrol edilirken hata oluştu:', error);
+        setWishlistCount(0);
+      }
+    };
+
     // Kullanıcı giriş durumunu kontrol et
     const checkLoginStatus = () => {
       const token = localStorage.getItem('authToken');
@@ -105,6 +118,7 @@ const Header = () => {
 
     fetchCategories();
     checkCartStatus();
+    checkWishlistStatus();
     checkLoginStatus();
 
     // Sepet güncellendiğinde tetiklenecek event listener ekle
@@ -117,9 +131,24 @@ const Header = () => {
       setCartCount(prev => prev + 1);
     };
     
+    // Favoriler güncellendiğinde sayıyı güncelle
+    const handleWishlistUpdate = () => {
+      checkWishlistStatus();
+    };
+    
+    // Storage event listener for wishlist updates
+    const handleStorageChange = (e) => {
+      if (e.key === 'wishlist') {
+        checkWishlistStatus();
+      }
+    };
+    
+    // Event dinleyicileri oluştur
     window.addEventListener('basketUpdated', handleBasketUpdated);
     window.addEventListener('cartItemAdded', handleCartItemAdded);
-
+    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
+    window.addEventListener('storage', handleStorageChange);
+    
     // Sayfa yüklendiğinde veya rota değiştiğinde offcanvas'ı kapat
     setShowOffcanvas(false);
     
@@ -146,6 +175,8 @@ const Header = () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('basketUpdated', handleBasketUpdated);
       window.removeEventListener('cartItemAdded', handleCartItemAdded);
+      window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, [location.pathname]);
 
@@ -358,6 +389,11 @@ const Header = () => {
                 to="/wishlist"
               >
                 <FaHeart />
+                {wishlistCount > 0 && (
+                  <Badge pill bg="danger" className="position-absolute top-0 start-100 translate-middle">
+                    {wishlistCount}
+                  </Badge>
+                )}
               </Button>
               
               <Button 

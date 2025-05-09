@@ -69,34 +69,76 @@ const ProductListPage = () => {
         }
         
         const response = await fetch(apiUrl);
+        
+        if (!response.ok) {
+          throw new Error(`API yanıtı başarısız: ${response.status}`);
+        }
+        
         const data = await response.json();
         console.log("Ürün listesi verileri:", data);
         
         // Verileri frontend'in beklediği formata dönüştür
-        const formattedProducts = Array.isArray(data) ? data.map(product => ({
-          id: product.id,
-          title: product.title,
-          description: product.description || '',
-          price: '1199.99', // Örnek fiyat
-          slug: product.id.toString(), // slug yerine id
-          image: `/media/images/products/2025/05/Ekran_Resmi_2025-05-05_18.28.46.png`, // Sabit resim URL'si
-          rating: 4, // Örnek değer
-          rating_count: 15, // Örnek değer
-          is_on_sale: false
-        })) : [];
+        let formattedProducts = [];
+        
+        // Farklı API yanıt formatlarını destekle
+        if (Array.isArray(data)) {
+          // Doğrudan dizi yanıtı
+          formattedProducts = data.map(product => formatProduct(product));
+        } else if (data.results && Array.isArray(data.results)) {
+          // Sayfalanmış yanıt
+          formattedProducts = data.results.map(product => formatProduct(product));
+          // Toplam sayfa sayısını ayarla
+          if (data.count) {
+            const itemsPerPage = data.results.length || 20;
+            setTotalPages(Math.ceil(data.count / itemsPerPage));
+          }
+        } else {
+          // Tanımlanamayan yanıt formatı
+          console.warn("Beklenmeyen API yanıt formatı:", data);
+          formattedProducts = [];
+        }
         
         setProducts(formattedProducts);
-        setTotalPages(Math.ceil((formattedProducts.length || 0) / 20));
+        
+        // Sayfa sayısını ayarla (eğer toplam sayfa sayısı belirtilmediyse ürün sayısına göre hesapla)
+        if (!data.count) {
+          setTotalPages(Math.ceil((formattedProducts.length || 0) / 20));
+        }
       } catch (error) {
         console.error('Ürünler yüklenirken hata oluştu:', error);
+        setProducts([]); // Hata durumunda ürün listesini sıfırla
       } finally {
         setLoading(false);
       }
     };
 
+    // Ürün verilerini formatlayan yardımcı fonksiyon
+    const formatProduct = (product) => {
+      return {
+        id: product.id,
+        title: product.title || 'İsimsiz Ürün',
+        description: product.description || '',
+        price: product.price || '0.00',
+        price_old: product.price_old,
+        slug: product.slug || product.id?.toString() || 'urun',
+        image: product.image || "https://via.placeholder.com/300",
+        images: product.images || [],
+        rating: product.rating || 0,
+        rating_count: product.rating_count || 0,
+        is_on_sale: product.is_on_sale || (product.price_old && product.price_old > product.price) || false,
+        brand: product.brand || null,
+        categories: product.categories || []
+      };
+    };
+
     const fetchCategories = async () => {
       try {
         const response = await fetch('/api/categories/');
+        
+        if (!response.ok) {
+          throw new Error(`Kategori API yanıtı başarısız: ${response.status}`);
+        }
+        
         const data = await response.json();
         setCategories(data);
         
@@ -106,6 +148,7 @@ const ProductListPage = () => {
         }
       } catch (error) {
         console.error('Kategoriler yüklenirken hata oluştu:', error);
+        setCategories([]); // Hata durumunda kategorileri sıfırla
       }
     };
 

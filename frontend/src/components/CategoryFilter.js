@@ -67,6 +67,10 @@ const CategoryFilter = ({
           >
             &times;
           </Button>
+
+          <Button variant="outline-secondary" onClick={onFilterReset}>
+            Filtreleri Temizle
+          </Button>
         </div>
         
         <div className="filter-content">
@@ -98,7 +102,6 @@ const CategoryFilter = ({
               </Accordion.Body>
             </Accordion.Item>
           </Accordion>
-          
           {/* Markalar */}
           <Accordion defaultActiveKey="0" className="filter-accordion">
             <Accordion.Item eventKey="0">
@@ -123,6 +126,9 @@ const CategoryFilter = ({
                     <p className="text-muted">Marka bulunamadı</p>
                   )}
                 </div>
+                <Button variant="outline-secondary" onClick={onFilterReset}>
+                  Tümünü Seç
+                </Button>
               </Accordion.Body>
             </Accordion.Item>
           </Accordion>
