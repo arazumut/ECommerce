@@ -211,6 +211,7 @@ const CartPage = () => {
           <Alert variant="success" className="mb-4">
             Kupon kodu başarıyla uygulandı. %20 indirim kazandınız!
           </Alert>
+          
         )}
 
         <Row>

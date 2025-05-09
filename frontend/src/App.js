@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './App.css';
 
@@ -19,10 +19,20 @@ import OrderSuccessPage from './pages/OrderSuccessPage';
 import NotFoundPage from './pages/NotFoundPage';
 import AboutPage from './pages/AboutPage';
 
+// Scroll to top on route change
+const ScrollToTop = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  return null;
+};
+
 function App() {
   return (
     <div className="app">
       <Header />
+      <ScrollToTop />
       <main className="main-content">
         <Routes>
           <Route path="/" element={<HomePage />} />
