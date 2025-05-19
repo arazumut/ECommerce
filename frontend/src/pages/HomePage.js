@@ -65,6 +65,8 @@ const HomePage = () => {
         setNewArrivals(formattedProducts);
       } catch (error) {
         console.error('Yeni ürünler yüklenirken hata oluştu:', error);
+        setNewArrivals([]);
+        setLoading(false);
       }
     };
 

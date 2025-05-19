@@ -1,7 +1,10 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 import requests
 from django.conf import settings
 import json
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
+from django.views.decorators.csrf import csrf_exempt
 
 def categories_redirect(request):
     """
@@ -37,6 +40,8 @@ def product_categories_redirect(request, product_id):
         f'/api/catalogue/products/{product_id}/categories/'
     ))
     
+    
+
     # Oscar API'den gelen yanıtı al
     if response.status_code == 200:
         return JsonResponse(response.json(), safe=False)
@@ -125,4 +130,124 @@ def product_detail_transform(request, product_id):
         return JsonResponse(transformed_data, safe=False)
     else:
         # Hata durumunda
-        return JsonResponse({}, safe=False) 
+        return JsonResponse({}, safe=False)
+
+def catalogue_categories_redirect(request, path=''):
+    """
+    /api/catalogue/categories/* URL'lerini işlemek için yönlendirme fonksiyonu
+    """
+    # Orijinal URL'den istek parametrelerini al
+    query_params = request.GET.urlencode()
+    
+    # Yeni URL oluştur (api/ öneki yerine api/catalogue/ önekini kullan)
+    api_url = f"{request.build_absolute_uri('/api/categories/')}"
+    if path:
+        api_url = f"{api_url}{path}"
+    if query_params:
+        api_url += f"?{query_params}"
+    
+    response = requests.get(api_url)
+    
+    # API'den gelen yanıtı doğrudan döndür
+    return HttpResponse(
+        content=response.content,
+        status=response.status_code,
+        content_type=response.headers.get('Content-Type', 'application/json')
+    )
+
+def catalogue_products_redirect(request, path=''):
+    """
+    /api/catalogue/products/* URL'lerini işlemek için yönlendirme fonksiyonu
+    """
+    # Orijinal URL'den istek parametrelerini al
+    query_params = request.GET.urlencode()
+    
+    # Yeni URL oluştur (api/ öneki yerine api/catalogue/ önekini kullan)
+    api_url = f"{request.build_absolute_uri('/api/products/')}"
+    if path:
+        api_url = f"{api_url}{path}"
+    if query_params:
+        api_url += f"?{query_params}"
+    
+    response = requests.get(api_url)
+    
+    # API'den gelen yanıtı doğrudan döndür
+    return HttpResponse(
+        content=response.content,
+        status=response.status_code,
+        content_type=response.headers.get('Content-Type', 'application/json')
+    )
+
+@csrf_exempt
+def register(request):
+    """
+    Kullanıcı kayıt API endpoint'i
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            email = data.get('email')
+            password = data.get('password')
+            
+            # Tüm gerekli alanların varlığını kontrol et
+            if not all([username, email, password]):
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Kullanıcı adı, e-posta ve şifre gereklidir.'
+                }, status=400)
+            
+            # Kullanıcının var olup olmadığını kontrol et
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Bu kullanıcı adı zaten kullanılıyor.'
+                }, status=400)
+            
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Bu e-posta adresi zaten kullanılıyor.'
+                }, status=400)
+            
+            # Yeni kullanıcı oluştur
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password
+            )
+            
+            # Kaydı tamamla ve kullanıcıyı giriş yap
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Kayıt başarıyla tamamlandı!',
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email
+                    }
+                })
+            else:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Kayıt yapıldı ancak otomatik giriş başarısız oldu.'
+                }, status=500)
+                
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Geçersiz JSON formatı.'
+            }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Bir hata oluştu: {str(e)}'
+            }, status=500)
+    else:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Yalnızca POST istekleri kabul edilir.'
+        }, status=405) 

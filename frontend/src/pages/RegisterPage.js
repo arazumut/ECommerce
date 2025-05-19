@@ -54,14 +54,17 @@ function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log(formData.email.split('@')[0])
     if (validateForm()) {
       setLoading(true);
       setServerError('');
       try {
         // API'ye kayıt isteği
         await axios.post('/api/register/', {
+          username: formData.email.split('@')[0],
           email: formData.email,
           password: formData.password1,
+          password2: 
           first_name: formData.firstName,
           last_name: formData.lastName,
         });

@@ -92,7 +92,6 @@ const CategoryFilter = ({
               />
             </div>
           </div>
-          
           {/* Kategoriler */}
           <Accordion defaultActiveKey="0" className="filter-accordion">
             <Accordion.Item eventKey="0">
@@ -139,6 +138,7 @@ const CategoryFilter = ({
               variant="primary" 
               className="apply-filter-btn"
               onClick={onFilterApply}
+              disabled={!selectedCategories.length && !selectedBrands.length && !priceRange.min && !priceRange.max}
             >
               Filtreleri Uygula
             </Button>
